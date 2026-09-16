@@ -655,3 +655,16 @@ procdump(void)
     printf("\n");
   }
 }
+
+int getprocn(void)
+{
+  int i = 0;
+  struct proc *p;
+  for(p = proc; p < &proc[NPROC]; p++){
+    if(p->state == UNUSED)
+      continue;
+    i++;
+  }
+  return i;  
+}
+
