@@ -12,6 +12,9 @@ int f(int x) {
 }
 
 void main(void) {
-  printf("%d %d\n", f(8)+1, 13);
+  char a[] = "Which registers contain arguments to functions? For example, which register holds 13 in main's call to printf?";
+  printf("x=%d y=%d", 3);
+  printf("%s.\n",a);
+
   exit(0);
 }
