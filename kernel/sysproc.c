@@ -100,14 +100,32 @@ sys_uptime(void)
 uint64
 sys_sigalarm(void)
 {
-  
-  return ;
+  int tick;
+  uint64 phandler;
+  struct proc *p = myproc();
+
+  if(argint(0, &tick) < 0)
+    return -1;
+  if(argaddr(1, &phandler) < 0)
+    return -1;
+  if(tick < 0)
+    return -1;
+  if(tick == 0)
+    tick = -1;
+  p->ticksreload = tick;
+  p->ticks = 0;
+  p->tickhandler = phandler; 
+  p->ticktrigger = 0;
+  // printf("%s:ticks:%d,handler %p.\n",__func__,tick,phandler);
+  return 0;
 }
 
 uint64
 sys_sigreturn(void)
 {
-
+  struct proc *p = myproc();
+  memmove(p->trapframe,p->dumptrapframe,(uint)sizeof(struct trapframe));
+  p->ticks = 0;
   return 0;
 }
 

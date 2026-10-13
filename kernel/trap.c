@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+// #include "string.h"
 
 struct spinlock tickslock;
 uint ticks;
@@ -78,7 +79,18 @@ usertrap(void)
 
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2)
+  {
+    p->ticks++;
+    printf("%s:p->ticks %d.\n",__func__,p->ticks);
+    if(p->ticks == p->ticksreload )
+    {
+      p->ticktrigger = 1;
+      //saved register
+      memmove(p->dumptrapframe,p->trapframe,(uint)sizeof(struct trapframe));
+    }
+
     yield();
+  }
 
   usertrapret();
 }
@@ -115,8 +127,16 @@ usertrapret(void)
   x |= SSTATUS_SPIE; // enable interrupts in user mode
   w_sstatus(x);
 
+  if(p->ticktrigger )
+  {
+    p->ticktrigger = 0;
+    // p->ticks = 0;
+    // printf("%s:handler triggered %p.\n",__func__,p->tickhandler);
+    w_sepc(p->tickhandler);
+  }
+  else
   // set S Exception Program Counter to the saved user pc.
-  w_sepc(p->trapframe->epc);
+    w_sepc(p->trapframe->epc);
 
   // tell trampoline.S the user page table to switch to.
   uint64 satp = MAKE_SATP(p->pagetable);
@@ -150,9 +170,10 @@ kerneltrap()
   }
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING)
+  if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING){
+  //  myproc()->ticks++;
     yield();
-
+  }
   // the yield() may have caused some traps to occur,
   // so restore trap registers for use by kernelvec.S's sepc instruction.
   w_sepc(sepc);
@@ -203,7 +224,6 @@ devintr()
   } else if(scause == 0x8000000000000001L){
     // software interrupt from a machine-mode timer interrupt,
     // forwarded by timervec in kernelvec.S.
-
     if(cpuid() == 0){
       clockintr();
     }
